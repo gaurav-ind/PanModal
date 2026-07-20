@@ -104,6 +104,10 @@ public extension PanModalPresentable where Self: UIViewController {
         return shouldRoundTopCorners
     }
 
+    var panModalWidthRatio: CGFloat {
+        return UIDevice.current.userInterfaceIdiom == .pad ? 0.5 : 1.0
+    }
+
     var closeButtonConfig: CloseButtonConfig {
         return .default
     }

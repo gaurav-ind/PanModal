@@ -99,6 +99,25 @@ open class PanModalPresentationController: UIPresentationController {
         return presentedViewController as? PanModalPresentable
     }
 
+    /**
+     Clamped ratio (0.1...1.0). 1.0 == full-width == original behavior.
+     */
+    private var effectiveWidthRatio: CGFloat {
+        return min(max(presentable?.panModalWidthRatio ?? 1.0, 0.1), 1.0)
+    }
+
+    private var presentedViewWidth: CGFloat {
+        guard let containerWidth = containerView?.bounds.width, containerWidth > 0
+            else { return 0 }
+        return (containerWidth * effectiveWidthRatio).rounded()
+    }
+
+    private var presentedViewOriginX: CGFloat {
+        guard let containerWidth = containerView?.bounds.width, containerWidth > 0
+            else { return 0 }
+        return ((containerWidth - presentedViewWidth) / 2.0).rounded()
+    }
+
     // MARK: - Views
 
     /**
@@ -168,6 +187,18 @@ open class PanModalPresentationController: UIPresentationController {
      */
     public override var presentedView: UIView {
         return panContainerView
+    }
+
+    /**
+     Override the presented frame so the transition animator picks up the
+     narrowed, centered frame on iPad.
+     */
+    public override var frameOfPresentedViewInContainerView: CGRect {
+        // Full-width (iPhone default): keep the original/default behavior verbatim.
+        guard effectiveWidthRatio < 1.0, let containerView = containerView
+            else { return super.frameOfPresentedViewInContainerView }
+        return CGRect(x: presentedViewOriginX, y: 0,
+                      width: presentedViewWidth, height: containerView.bounds.height)
     }
 
     // MARK: - Gesture Recognizers
@@ -414,17 +445,20 @@ private extension PanModalPresentationController {
         guard let frame = containerView?.frame
             else { return }
 
-        let adjustedSize = CGSize(width: frame.size.width, height: frame.size.height - anchoredYPosition)
+        // Full-width (iPhone default): original sizing; narrowed+centered only when ratio < 1.0.
+        let modalWidth = effectiveWidthRatio < 1.0 ? presentedViewWidth : frame.size.width
+        let originX = effectiveWidthRatio < 1.0 ? presentedViewOriginX : frame.origin.x
+        let adjustedSize = CGSize(width: modalWidth, height: frame.size.height - anchoredYPosition)
         let panFrame = panContainerView.frame
-        panContainerView.frame.size = frame.size
-        
+        panContainerView.frame.size = CGSize(width: modalWidth, height: frame.size.height)
+
         if ![shortFormYPosition, longFormYPosition].contains(panFrame.origin.y) {
             // if the container is already in the correct position, no need to adjust positioning
             // (rotations & size changes cause positioning to be out of sync)
             let yPosition = panFrame.origin.y - panFrame.height + frame.height
             presentedView.frame.origin.y = max(yPosition, anchoredYPosition)
         }
-        panContainerView.frame.origin.x = frame.origin.x
+        panContainerView.frame.origin.x = originX
         presentedViewController.view.frame = CGRect(origin: .zero, size: adjustedSize)
     }
 

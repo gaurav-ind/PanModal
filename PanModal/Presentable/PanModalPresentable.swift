@@ -174,6 +174,12 @@ public protocol PanModalPresentable: AnyObject {
     var showDragIndicator: Bool { get }
 
     /**
+     Width of the sheet as a ratio (0.0...1.0) of the container width.
+     Sheet is horizontally centered. Default 1.0 on iPhone, 0.5 on iPad.
+     */
+    var panModalWidthRatio: CGFloat { get }
+
+    /**
      Configuration for the close button displayed on the dimmed background view
      above the presented view.
 
