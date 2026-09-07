@@ -532,7 +532,20 @@ private extension PanModalPresentationController {
      */
     func updateCloseButtonConstraints(presentedView: UIView) {
         guard let config = presentable?.closeButtonConfig else { return }
-        
+
+        /**
+         Both views must share an ancestor, otherwise `NSLayoutConstraint.activate` throws
+         NSGenericException ("no common ancestor") — an ObjC throw, uncatchable from Swift, so it
+         kills the app. That happens whenever a layout update lands while `containerView` is nil:
+         the button was never added (see `updateCloseButton`), or the presentation is already torn
+         down and both views are detached. `containerView` is that shared ancestor.
+         Skipping is safe: the next layout pass with a live container re-runs this.
+         */
+        guard let containerView = containerView,
+              closeButton.isDescendant(of: containerView),
+              presentedView.isDescendant(of: containerView)
+            else { return }
+
         // Remove old constraints
         NSLayoutConstraint.deactivate(closeButtonConstraints)
         closeButtonConstraints.removeAll()
