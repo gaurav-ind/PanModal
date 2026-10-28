@@ -171,6 +171,7 @@ open class PanModalPresentationController: UIPresentationController {
         }
         // Style the button
         button.backgroundColor = .clear
+        button.accessibilityIdentifier = "PanModal.closeButton"
         // Add action
         button.addTarget(self, action: #selector(closeButtonTapped), for: .touchUpInside)
         
